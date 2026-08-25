@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boards - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'boards', currentUser }) %>
+  <div class="page">
+    <h1>Your boards</h1>
+
+    <% if (boards.length === 0) { %>
+      <p style="color:var(--text-muted);">No boards yet — create your first one below.</p>
+    <% } %>
+
+    <div class="board-index-grid">
+      <% boards.forEach(function(b) { %>
+        <a class="board-tile <%= b.cover_mime_type ? 'has-cover' : '' %>" href="/boards/<%= b.id %>"
+           <%= b.cover_mime_type ? `style="background-image:url('/boards/${b.id}/cover')"` : '' %>>
+          <span class="tile-icon"><%- (templates[b.template] || templates.blank).icon %></span>
+          <h3><%= b.title %></h3>
+          <div class="tile-meta"><%= b.member_count %> member<%= b.member_count == 1 ? '' : 's' %> &middot; owned by <%= b.owner_name || 'someone who left' %></div>
+          <span class="tile-permission"><%= b.my_permission %></span>
+        </a>
+      <% }); %>
+    </div>
+
+    <div class="card-panel new-board-panel">
+      <h3>Create a board</h3>
+      <% if (error) { %><div class="error-box"><%= error %></div><% } %>
+      <form method="POST" action="/boards">
+        <label>Title</label>
+        <input type="text" name="title" placeholder="e.g. Sunday Outreach, Spring Marketing, Web Dev 101" required autofocus>
+        <label>Description (optional)</label>
+        <input type="text" name="description" placeholder="What's this board for?">
+        <label>Template</label>
+        <div class="template-picker">
+          <% Object.keys(templates).forEach(function(key, i) { %>
+            <label class="template-option <%= i === 0 ? 'selected' : '' %>">
+              <input type="radio" name="template" value="<%= key %>" <%= i === 0 ? 'checked' : '' %>>
+              <span class="t-icon"><%- templates[key].icon %></span>
+              <%= templates[key].label %>
+            </label>
+          <% }); %>
+        </div>
+        <button type="submit" class="btn" style="margin-top:16px;">Create board</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.template-option').forEach(function (opt) {
+      opt.addEventListener('click', function () {
+        document.querySelectorAll('.template-option').forEach((o) => o.classList.remove('selected'));
+        opt.classList.add('selected');
+      });
+    });
+  </script>
+</body>
+</html>
