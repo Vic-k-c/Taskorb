@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Map - TaskOrb</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'map', currentUser }) %>
+  <div class="map-wrap">
+    <div class="map-hint" id="mapHint">Locating you&hellip;</div>
+    <div id="map"></div>
+  </div>
+
+  <script>
+    window.INTEREST_COLORS = { hot: '#B5533C', warm: '#E3A93B', cold: '#6B7686' };
+    window.BOARDS_DATA = <%- JSON.stringify(boardsWithLists) %>;
+    window.TEMPLATES = <%- JSON.stringify(templates) %>;
+  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/js/map.js"></script>
+</body>
+</html>

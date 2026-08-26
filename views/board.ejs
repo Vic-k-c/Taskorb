@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= boardMeta.title %> - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'boards', currentUser }) %>
+
+  <div class="board-header <%= boardMeta.cover_mime_type ? 'has-cover' : '' %>"
+       <%= boardMeta.cover_mime_type ? `style="background-image:url('/boards/${boardMeta.id}/cover')"` : '' %>>
+    <div>
+      <h1><%= boardMeta.title %></h1>
+      <% if (boardMeta.description) { %><div style="font-size:13px; color:var(--text-muted);"><%= boardMeta.description %></div><% } %>
+    </div>
+    <div class="board-actions">
+      <div class="board-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="cardSearch" placeholder="Search cards...">
+      </div>
+      <div class="avatar-stack">
+        <% members.slice(0, 5).forEach(function(m) { %>
+          <div class="avatar-chip" title="<%= m.name %> (<%= m.permission %>)"><%= m.name.charAt(0).toUpperCase() %></div>
+        <% }); %>
+      </div>
+      <% if (myPermission === 'owner') { %>
+        <button class="btn ghost small" onclick="openShare()">Share</button>
+        <button class="btn ghost small" onclick="openSettings()">Settings</button>
+      <% } %>
+      <a href="/boards" class="btn ghost small">All boards</a>
+    </div>
+  </div>
+
+  <div class="board-wrap" id="boardWrap">
+    <% board.forEach(function(list) { %>
+      <div class="board-list" data-list-id="<%= list.id %>">
+        <div class="board-list-header">
+          <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+            <input class="list-title-input" value="<%= list.name %>" data-list-id="<%= list.id %>" onchange="renameList(this)">
+          <% } else { %>
+            <span><%= list.name %></span>
+          <% } %>
+          <span class="count"><%= list.cards.length %></span>
+        </div>
+        <div class="board-list-cards" data-list-id="<%= list.id %>">
+          <% list.cards.forEach(function(card) { %>
+            <div class="prospect-card interest-<%= card.priority %>"
+                 draggable="true"
+                 data-card-id="<%= card.id %>"
+                 data-card-name="<%= card.name.toLowerCase() %>"
+                 onclick="openCard(<%= card.id %>)">
+              <% if (card.cover_attachment_id) { %>
+                <img class="card-cover" src="/api/attachments/<%= card.cover_attachment_id %>" alt="">
+              <% } %>
+              <div class="pname"><%= card.name %></div>
+              <% if (card.address) { %><div class="pmeta"><%= card.address %></div><% } %>
+              <% if (card.phone) { %><div class="pmeta"><%= card.phone %></div><% } %>
+              <div class="ptags">
+                <span class="tag"><%= card.priority %></span>
+                <% if (card.assigned_name) { %><span class="tag"><%= card.assigned_name %></span><% } %>
+                <% if (card.attachment_count > 0) { %><span class="tag">&#128206; <%= card.attachment_count %></span><% } %>
+              </div>
+            </div>
+          <% }); %>
+
+          <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+            <div class="quick-add-card" id="qa-<%= list.id %>">
+              <button type="button" class="btn ghost small" style="width:100%;" onclick="showQuickAdd(<%= list.id %>)">+ Add card</button>
+            </div>
+          <% } %>
+        </div>
+        <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+          <div style="padding: 0 10px 10px;">
+            <button type="button" class="btn ghost small" onclick="deleteList(<%= list.id %>)" style="width:100%;">Delete list</button>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+
+    <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+      <button type="button" class="add-list-btn" onclick="addList()">+ Add another list</button>
+    <% } %>
+  </div>
+
+  <!-- Card detail modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box">
+      <h3>Edit card</h3>
+      <form id="cardForm">
+        <input type="hidden" id="cardId">
+        <label>Name</label>
+        <input type="text" id="cardName">
+        <label>Phone</label>
+        <input type="text" id="cardPhone">
+        <label>Email</label>
+        <input type="text" id="cardEmail">
+        <label>Address</label>
+        <input type="text" id="cardAddress">
+        <label>Priority</label>
+        <select id="cardInterest">
+          <option value="hot">Hot / urgent</option>
+          <option value="warm">Warm / normal</option>
+          <option value="cold">Cold / low</option>
+        </select>
+        <label>Assigned to</label>
+        <select id="cardAssigned">
+          <option value="">Unassigned</option>
+          <% allUsers.forEach(function(u) { %>
+            <option value="<%= u.id %>"><%= u.name %></option>
+          <% }); %>
+        </select>
+        <label>Notes</label>
+        <textarea id="cardNotes"></textarea>
+
+        <label>Attachments</label>
+        <div class="attachment-list" id="attachmentList"></div>
+        <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+          <label class="upload-drop" for="attachInput">Click to add photos, PDFs, or video (max 20MB each)</label>
+          <input type="file" id="attachInput" multiple accept="image/*,application/pdf,video/mp4,video/quicktime" style="display:none;">
+        <% } %>
+
+        <div class="modal-actions">
+          <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+            <button type="button" class="btn danger" onclick="deleteCard()">Delete</button>
+          <% } else { %><span></span><% } %>
+          <div>
+            <button type="button" class="btn ghost" onclick="closeModal()">Cancel</button>
+            <% if (myPermission === 'owner' || myPermission === 'editor') { %>
+              <button type="submit" class="btn">Save</button>
+            <% } %>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Share modal -->
+  <% if (myPermission === 'owner') { %>
+  <div class="modal-backdrop" id="shareBackdrop">
+    <div class="modal-box">
+      <h3>Share "<%= boardMeta.title %>"</h3>
+      <div id="memberList">
+        <% members.forEach(function(m) { %>
+          <div class="member-row" data-user-id="<%= m.user_id %>">
+            <span><%= m.name %> <span style="color:var(--text-muted);">(<%= m.email %>)</span></span>
+            <span style="display:flex; gap:6px; align-items:center;">
+              <% if (m.user_id === currentUser.id) { %>
+                <span class="tag"><%= m.permission %></span>
+              <% } else { %>
+                <select onchange="changePermission(<%= m.user_id %>, this.value)">
+                  <option value="owner" <%= m.permission === 'owner' ? 'selected' : '' %>>Owner</option>
+                  <option value="editor" <%= m.permission === 'editor' ? 'selected' : '' %>>Editor</option>
+                  <option value="viewer" <%= m.permission === 'viewer' ? 'selected' : '' %>>Viewer</option>
+                </select>
+                <button type="button" class="btn danger small" onclick="removeMember(<%= m.user_id %>)">Remove</button>
+              <% } %>
+            </span>
+          </div>
+        <% }); %>
+      </div>
+      <div class="add-member-row">
+        <select id="newMemberUser">
+          <% allUsers.filter(u => !members.find(m => m.user_id === u.id)).forEach(function(u) { %>
+            <option value="<%= u.id %>"><%= u.name %> (<%= u.email %>)</option>
+          <% }); %>
+        </select>
+        <select id="newMemberPermission" style="max-width:110px;">
+          <option value="editor">Editor</option>
+          <option value="viewer">Viewer</option>
+          <option value="owner">Owner</option>
+        </select>
+        <button type="button" class="btn small" onclick="addMember()">Add</button>
+      </div>
+      <div class="modal-actions">
+        <span></span>
+        <button type="button" class="btn ghost" onclick="closeShare()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal-backdrop" id="settingsBackdrop">
+    <div class="modal-box">
+      <h3>Board settings</h3>
+
+      <label>Cover photo</label>
+      <div class="cover-preview" id="coverPreview" style="<%= boardMeta.cover_mime_type ? `background-image:url('/boards/${boardMeta.id}/cover')` : '' %>">
+        <% if (!boardMeta.cover_mime_type) { %>No cover photo<% } %>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <label class="btn ghost small" for="coverInput" style="cursor:pointer;">Upload cover</label>
+        <input type="file" id="coverInput" accept="image/*" style="display:none;">
+        <% if (boardMeta.cover_mime_type) { %>
+          <button type="button" class="btn ghost small" onclick="removeCover()">Remove cover</button>
+        <% } %>
+      </div>
+
+      <label style="margin-top:16px;">Title</label>
+      <input type="text" id="settingsTitle" value="<%= boardMeta.title %>">
+      <label>Description</label>
+      <textarea id="settingsDescription"><%= boardMeta.description || '' %></textarea>
+      <div style="margin-top:10px;">
+        <button type="button" class="btn small" onclick="saveSettings()">Save changes</button>
+      </div>
+
+      <div class="danger-zone">
+        <h4>Danger zone</h4>
+        <p style="font-size:12px; color:var(--text-muted); margin:0 0 8px;">
+          Deleting a board permanently removes its lists, cards, and attachments. Type <strong>DELETE</strong> to confirm.
+        </p>
+        <input type="text" id="deleteConfirmInput" placeholder="Type DELETE">
+        <button type="button" class="btn danger small" onclick="deleteBoard()">Delete this board</button>
+      </div>
+
+      <div class="modal-actions">
+        <span></span>
+        <button type="button" class="btn ghost" onclick="closeSettings()">Close</button>
+      </div>
+    </div>
+  </div>
+  <% } %>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script>
+    window.BOARD_DATA = <%- JSON.stringify(board) %>;
+    window.BOARD_ID = <%= boardMeta.id %>;
+    window.CAN_EDIT = <%= (myPermission === 'owner' || myPermission === 'editor') ? 'true' : 'false' %>;
+  </script>
+  <script src="/js/board.js"></script>
+</body>
+</html>

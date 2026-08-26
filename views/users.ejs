@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team - Canvass</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'users', currentUser }) %>
+  <div class="page">
+    <h1>Team</h1>
+
+    <div class="card-panel" style="margin-bottom:20px;">
+      <table class="simple">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          <% users.forEach(function(u) { %>
+            <tr>
+              <td><%= u.name %></td>
+              <td><%= u.email %></td>
+              <td style="text-transform:capitalize;"><%= u.role %></td>
+              <td>
+                <% if (u.id !== currentUser.id) { %>
+                  <form method="POST" action="/users/<%= u.id %>?_method=DELETE" onsubmit="return confirm('Remove this team member?');">
+                    <button type="submit" class="btn danger small">Remove</button>
+                  </form>
+                <% } else { %>
+                  <span style="font-size:12px; color:var(--text-muted);">You</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-panel" style="max-width:420px;">
+      <h3>Add a team member</h3>
+      <% if (error) { %><div class="error-box"><%= error %></div><% } %>
+      <form method="POST" action="/users">
+        <label>Full name</label>
+        <input type="text" name="name" required>
+        <label>Email</label>
+        <input type="email" name="email" required>
+        <label>Temporary password</label>
+        <input type="password" name="password" minlength="6" required>
+        <label>Role</label>
+        <select name="role">
+          <option value="member">Member — adds &amp; works prospects</option>
+          <option value="leader">Leader — also assigns &amp; exports</option>
+          <option value="admin">Admin — full access, manages team</option>
+        </select>
+        <button type="submit" class="btn">Add member</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'dashboard', currentUser }) %>
+  <div class="page">
+    <h1>Dashboard</h1>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num"><%= total %></div><div class="label">Total cards</div></div>
+      <div class="stat-card"><div class="num"><%= thisWeek %></div><div class="label">Added this week</div></div>
+      <div class="stat-card"><div class="num"><%= assignedToMe %></div><div class="label">Assigned to you</div></div>
+      <div class="stat-card"><div class="num"><%= boardCount %></div><div class="label">Your boards</div></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card-panel">
+        <h3>Cards by board</h3>
+        <% const maxCount = Math.max(1, ...byBoard.map(b => b.count)); %>
+        <% if (byBoard.length === 0) { %>
+          <p style="color:var(--text-muted); font-size:13px;">No boards yet.</p>
+        <% } %>
+        <% byBoard.forEach(function(b) { %>
+          <div class="bar-row">
+            <div class="bar-label"><%= b.name %></div>
+            <div class="bar-track"><div class="bar-fill" style="width: <%= (b.count / maxCount) * 100 %>%"></div></div>
+            <div class="bar-count"><%= b.count %></div>
+          </div>
+        <% }); %>
+
+        <h3 style="margin-top:22px;">By priority</h3>
+        <% byPriority.forEach(function(i) { %>
+          <div class="bar-row">
+            <div class="bar-label" style="text-transform:capitalize;"><%= i.priority %></div>
+            <div class="bar-track"><div class="bar-fill" style="width: <%= (i.count / maxCount) * 100 %>%"></div></div>
+            <div class="bar-count"><%= i.count %></div>
+          </div>
+        <% }); %>
+
+        <div class="export-row">
+          <a class="btn secondary" href="/export/pdf">Download PDF report</a>
+          <a class="btn ghost" href="/export/csv">Download CSV</a>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3>Leaderboard</h3>
+        <% if (leaderboard.length === 0) { %>
+          <p style="color:var(--text-muted); font-size:13px;">No cards logged yet — add one from the Map view or a board to get started.</p>
+        <% } %>
+        <% leaderboard.forEach(function(l, i) { %>
+          <div class="leader-row">
+            <span><%= i + 1 %>. <%= l.name %></span>
+            <strong><%= l.count %></strong>
+          </div>
+        <% }); %>
+        <a href="/map" class="btn" style="margin-top:16px; width:100%; text-align:center;">+ Add a card on the map</a>
+        <a href="/boards" class="btn ghost" style="margin-top:8px; width:100%; text-align:center;">View your boards</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
