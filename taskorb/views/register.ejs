@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Set up - TaskOrb</title>
+  <link rel="icon" href="/img/logo.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <img src="/img/logo.png" alt="TaskOrb" class="logo-img" style="height:36px; margin-bottom:8px;">
+      <h1 style="font-size:20px;">Set up your account</h1>
+      <p class="sub">You're the first person here, so this account becomes the admin. Invite your team afterward from Team &rarr; Add member, and create your first board right after.</p>
+      <% if (error) { %><div class="error-box"><%= error %></div><% } %>
+      <form method="POST" action="/register">
+        <label>Full name</label>
+        <input type="text" name="name" required autofocus>
+        <label>Email</label>
+        <input type="email" name="email" required>
+        <label>Password</label>
+        <input type="password" name="password" minlength="6" required>
+        <button class="btn" type="submit">Create admin account</button>
+      </form>
+      <div class="switch">Already set up? <a href="/login">Log in</a></div>
+    </div>
+  </div>
+</body>
+</html>
