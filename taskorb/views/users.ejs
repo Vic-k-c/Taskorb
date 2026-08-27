@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Team - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'users', currentUser }) %>
+  <div class="page">
+    <h1>Team</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;">Members of this organization only. Switch orgs from the menu next to the logo to manage a different team.</p>
+
+    <div class="card-panel" style="margin-bottom:20px;">
+      <table class="simple">
+        <thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead>
+        <tbody>
+          <% users.forEach(function(u) { %>
+            <tr>
+              <td><%= u.name %></td>
+              <td><%= u.email %></td>
+              <td style="text-transform:capitalize;"><%= u.role %></td>
+              <td>
+                <% if (u.id !== currentUser.id) { %>
+                  <form method="POST" action="/users/<%= u.id %>?_method=DELETE" onsubmit="return confirm('Remove this person from the organization? Their account and any other orgs they belong to are unaffected.');">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                    <button type="submit" class="btn danger small">Remove</button>
+                  </form>
+                <% } else { %>
+                  <span style="font-size:12px; color:var(--text-muted);">You</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card-panel" style="max-width:460px;">
+      <h3>Add a team member</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">
+        They need a TaskOrb account already (any org's — accounts are self-service). If they don't have one yet, send them to <code>/register</code> to create one, then add them here.
+      </p>
+      <% if (error) { %><div class="error-box"><%= error %></div><% } %>
+      <form method="POST" action="/users">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Their email</label>
+        <input type="email" name="email" placeholder="person@example.com" required>
+        <label>Role in this org</label>
+        <select name="role">
+          <option value="member">Member — adds &amp; works cards</option>
+          <option value="leader">Leader — also assigns &amp; exports</option>
+          <option value="admin">Admin — full access, manages team</option>
+        </select>
+        <button type="submit" class="btn">Add member</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
