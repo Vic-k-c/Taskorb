@@ -12,7 +12,17 @@ const ICONS = {
 
   marketing: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18" stroke-width="1.6"/><path d="M6 16l4.5-5 3.5 3 6-7"/><path d="M16.5 6.5H20V10" stroke-width="1.6"/></svg>`,
   online_classes: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5L12 4l10 4.5-10 4.5-10-4.5z"/><path d="M6.5 10.7v4.3c0 1.6 2.6 3 5.5 3s5.5-1.4 5.5-3v-4.3"/><path d="M21 8.5v5.5" stroke-width="1.6"/><circle cx="21" cy="15.3" r="1" fill="currentColor" stroke="none"/><path d="M10.8 16.3v2.6l2.3-1.3z" fill="currentColor" stroke="none"/></svg>`,
-  todo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4" width="6" height="6" rx="1.3"/><path d="M5.3 7l1.3 1.3L8.5 6" stroke-width="1.6"/><path d="M12 7h8.5" stroke-width="1.6"/><rect x="3.5" y="14" width="6" height="6" rx="1.3" stroke-dasharray="1.4 1.8"/><path d="M12 17h8.5" stroke-width="1.6"/></svg>`
+  todo: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Top Checked Item -->
+  <rect x="3" y="4" width="7" height="6" rx="0.5" />
+  <path d="M5 7l1.5 1.5 2.5-3" />
+  <line x1="12" y1="7" x2="21" y2="7" />
+
+  <!-- Bottom Unchecked Item -->
+  <rect x="3" y="14" width="7" height="6" rx="0.5" />
+  <line x1="12" y1="17" x2="21" y2="17" />
+</svg>
+`
 };
 
 const TEMPLATES = {
