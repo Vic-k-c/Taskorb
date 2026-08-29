@@ -510,7 +510,7 @@ table.simple th { color: var(--text-muted); text-transform: uppercase; font-size
 .kebab-btn svg { width: 18px; height: 18px; }
 .kebab-btn:hover { background: #F0EFE8; }
 .kebab-dropdown {
-  display: none; position: absolute; top: 42px; right: 0; width: 200px;
+  display: none; position: fixed; top: 122px; right: 14px; width: 200px;
   background: #fff; border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.2);
   z-index: 3000; padding: 10px;
 }
