@@ -1,4 +1,4 @@
-const { seedDefaultTags, STARTER_TAGS } = require('../lib/tags');
+const { seedDefaultTags, STARTER_TAGS } = require('../../lib/tags');
 
 async function up(client) {
   // Tables already exist on a fresh install (001_initial_schema.js runs the
