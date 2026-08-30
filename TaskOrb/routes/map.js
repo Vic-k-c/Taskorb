@@ -198,10 +198,25 @@ router.get('/api/reverse-geocode', requireAuth, async (req, res) => {
   if (!lat || !lng) return res.status(400).json({ error: 'lat and lng required' });
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`;
-    const resp = await fetch(url, { headers: { 'User-Agent': 'taskorb-prototype/1.0' } });
+    // Nominatim's usage policy requires a descriptive User-Agent identifying
+    // the application (and ideally contact info) -- a generic one can get
+    // silently rate-limited/blocked, especially from datacenter IPs like
+    // Render's. Replace the contact info below with something real.
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'TaskOrb/1.0 (+https://github.com/) contact: set-a-real-contact-here',
+        'Accept': 'application/json'
+      }
+    });
+    if (!resp.ok) {
+      const bodyPreview = (await resp.text()).slice(0, 200);
+      console.error(`Reverse geocode failed: Nominatim returned ${resp.status}. Body preview: ${bodyPreview}`);
+      return res.json({ address: '' });
+    }
     const data = await resp.json();
     res.json({ address: data.display_name || '' });
   } catch (err) {
+    console.error('Reverse geocode error:', err.message);
     res.json({ address: '' });
   }
 });
