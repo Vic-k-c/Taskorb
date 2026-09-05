@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Platform Admin - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'platform', currentUser }) %>
+  <div class="page">
+    <h1>Platform overview</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;">
+      Visible only to you as the platform operator. Every org's own admins remain blind to this and to each other.
+    </p>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num"><%= totals.org_count %></div><div class="label">Organizations</div></div>
+      <div class="stat-card"><div class="num"><%= totals.user_count %></div><div class="label">Total accounts</div></div>
+      <div class="stat-card"><div class="num"><%= totals.board_count %></div><div class="label">Total boards</div></div>
+      <div class="stat-card"><div class="num"><%= totals.card_count %></div><div class="label">Total cards</div></div>
+    </div>
+
+    <div class="card-panel">
+      <h3>Organizations</h3>
+      <table class="simple">
+        <thead><tr><th>Name</th><th>Members</th><th>Boards</th><th>Created</th><th></th></tr></thead>
+        <tbody>
+          <% orgs.forEach(function(o) { %>
+            <tr>
+              <td><%= o.name %></td>
+              <td><%= o.member_count %></td>
+              <td><%= o.board_count %></td>
+              <td><%= new Date(o.created_at).toLocaleDateString() %></td>
+              <td><button type="button" class="btn ghost small" onclick="switchOrg(<%= o.id %>)">Enter as admin</button></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>
