@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node server.js",
     "migrate": "node db/migrate.js",
-    "backup": "node db/backup.js"
+    "backup": "node db/backup.js",
+    "migrate-to-new-host": "node db/migrate-to-new-host.js"
   },
   "dependencies": {
     "@sentry/node": "^8.0.0",
