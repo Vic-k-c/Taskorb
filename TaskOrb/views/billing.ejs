@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Billing - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/billing.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'billing', currentUser }) %>
+  <div class="page">
+    <h1>Billing</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;">
+      Only visible to org admins. <%= org.name %> is currently on the <strong><%= plan.name %></strong> plan.
+    </p>
+
+    <% if (typeof checkoutStatus !== 'undefined' && checkoutStatus === 'success') { %>
+      <div class="billing-banner success">Payment received -- your plan is now active.</div>
+    <% } else if (typeof checkoutStatus !== 'undefined' && checkoutStatus === 'trial-started') { %>
+      <div class="billing-banner success">Your <%= trialDays %>-day trial has started. Subscribe any time before it ends to keep access.</div>
+    <% } else if (typeof checkoutStatus !== 'undefined' && checkoutStatus === 'pending') { %>
+      <div class="billing-banner">Your payment is still processing. This page will update automatically once it's confirmed (usually within a minute).</div>
+    <% } else if (typeof checkoutStatus !== 'undefined' && checkoutStatus === 'cancel-requested') { %>
+      <div class="billing-banner">Cancellation requested. You'll keep access until your current billing period ends.</div>
+    <% } %>
+
+    <div class="card-panel billing-current-plan">
+      <div class="billing-plan-head">
+        <div>
+          <h3 style="margin:0;"><%= plan.name %></h3>
+          <p style="margin:2px 0 0; font-size:13px; color:var(--text-muted);">
+            <% if (plan.key === 'free') { %>
+              Free forever.
+            <% } else { %>
+              $<%= org.billing_cycle === 'annual' ? plan.priceAnnual : plan.priceMonthly %> / <%= org.billing_cycle === 'annual' ? 'year' : 'month' %>
+              &middot; status: <span style="text-transform:capitalize;"><%= org.subscription_status %></span>
+              <% if (org.subscription_status === 'trial' && org.trial_ends_at) { %>
+                &middot; <span style="color:var(--brand-purple); font-weight:600;">trial ends <%= new Date(org.trial_ends_at).toLocaleDateString() %></span>
+              <% } %>
+              <% if (org.subscription_status === 'grace' && org.grace_period_ends_at) { %>
+                &middot; <span style="color:var(--clay);">payment issue -- update billing by <%= new Date(org.grace_period_ends_at).toLocaleDateString() %></span>
+              <% } %>
+              <% if (org.subscription_status === 'canceled' && org.current_period_end) { %>
+                &middot; <span style="color:var(--clay);">canceled -- access until <%= new Date(org.current_period_end).toLocaleDateString() %></span>
+              <% } %>
+            <% } %>
+          </p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <a href="/billing/upgrade" class="btn small">
+            <%= plan.key === 'free' ? 'Upgrade' : (org.subscription_status === 'trial' ? 'Subscribe now' : 'Change plan') %>
+          </a>
+          <% if (plan.key !== 'free' && org.subscription_status === 'active') { %>
+            <form method="POST" action="/billing/cancel" onsubmit="return confirm('Cancel your subscription? You\'ll keep access until the end of the current billing period.');">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn ghost small">Cancel</button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+
+      <div class="billing-usage-grid">
+        <div class="billing-usage-item boards">
+          <div class="billing-usage-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Boards</div>
+          <div class="billing-usage-num"><%= usage.boards %> <span class="of">of <%= plan.boardLimit === null ? '\u221e' : plan.boardLimit %></span></div>
+          <div class="billing-usage-bar"><div class="billing-usage-fill" style="width:<%= plan.boardLimit ? Math.min(100, Math.round(usage.boards / plan.boardLimit * 100)) : 8 %>%;"></div></div>
+        </div>
+        <div class="billing-usage-item seats">
+          <div class="billing-usage-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.4"/><path d="M15.7 14.2c2.6.4 4.3 2.3 4.3 5.3"/></svg>Seats</div>
+          <div class="billing-usage-num"><%= usage.seats %> <span class="of">of <%= plan.seatLimit === null ? '\u221e' : plan.seatLimit %></span></div>
+          <div class="billing-usage-bar"><div class="billing-usage-fill" style="width:<%= plan.seatLimit ? Math.min(100, Math.round(usage.seats / plan.seatLimit * 100)) : 8 %>%;"></div></div>
+        </div>
+        <div class="billing-usage-item storage">
+          <div class="billing-usage-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l7.5 3.4v5.6c0 4.9-3.2 8.7-7.5 9.9-4.3-1.2-7.5-5-7.5-9.9V5.9L12 2.5z"/></svg>Storage</div>
+          <div class="billing-usage-num"><%= usage.attachmentMb %><span class="of">MB of <%= plan.attachmentLimitMb %>MB</span></div>
+          <div class="billing-usage-bar"><div class="billing-usage-fill" style="width:<%= plan.attachmentLimitMb ? Math.min(100, Math.round(usage.attachmentMb / plan.attachmentLimitMb * 100)) : 0 %>%;"></div></div>
+        </div>
+      </div>
+
+      <div class="billing-feature-list">
+        <span class="<%= plan.hasMap ? 'on' : 'off' %>">Map / pins</span>
+        <span class="<%= plan.hasExport ? 'on' : 'off' %>">CSV / PDF export</span>
+        <span class="<%= plan.hasOrgTags ? 'on' : 'off' %>">Org-wide tags</span>
+        <span class="<%= plan.hasMultiAdmin ? 'on' : 'off' %>">Multiple admins</span>
+      </div>
+    </div>
+
+    <div class="card-panel">
+      <h3>Billing history</h3>
+      <% if (transactions.length === 0) { %>
+        <p style="font-size:13px; color:var(--text-muted);">No billing activity yet.</p>
+      <% } else { %>
+        <div class="table-scroll">
+        <table class="simple">
+          <thead><tr><th>Date</th><th>Type</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <% transactions.forEach(function(t) { %>
+              <tr>
+                <td><%= new Date(t.created_at).toLocaleDateString() %></td>
+                <td style="text-transform:capitalize;"><%= t.type.replace(/_/g, ' ') %></td>
+                <td><%= t.plan_key || '-' %></td>
+                <td><%= t.amount_usd ? '$' + t.amount_usd : '-' %></td>
+                <td style="text-transform:capitalize;"><%= t.status %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
