@@ -1,0 +1,21 @@
+{
+  "name": "TaskOrb",
+  "short_name": "TaskOrb",
+  "description": "Boards, a live map, and follow-up reminders for your team.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#17233A",
+  "theme_color": "#17233A",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Calendar", "url": "/calendar" },
+    { "name": "Map", "url": "/map" },
+    { "name": "Boards", "url": "/boards" }
+  ]
+}
