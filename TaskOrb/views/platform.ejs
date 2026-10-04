@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#17233A">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TaskOrb">
+  <title>Platform Admin - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/billing.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'platform', currentUser }) %>
+  <div class="page">
+    <h1>Platform overview</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;">
+      Visible only to you as the platform operator. Every org's own admins remain blind to this and to each other.
+      &middot; <a href="/platform/paystack-lookup">Paystack subscription lookup &rarr;</a>
+    </p>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num"><%= totals.org_count %></div><div class="label">Organizations</div></div>
+      <div class="stat-card"><div class="num"><%= totals.user_count %></div><div class="label">Total accounts</div></div>
+      <div class="stat-card"><div class="num"><%= totals.board_count %></div><div class="label">Total boards</div></div>
+      <div class="stat-card"><div class="num"><%= totals.card_count %></div><div class="label">Total cards</div></div>
+    </div>
+
+    <div class="card-panel" style="margin-top:20px;">
+      <h3>Revenue &amp; plans</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-top:-8px;">
+        Estimated MRR treats annual subscriptions as 1/12th their price per month. Doesn't account for pending trials converting or mid-cycle plan changes.
+      </p>
+      <div class="billing-usage-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="billing-usage-item seats">
+          <div class="billing-usage-label">Estimated MRR</div>
+          <div class="billing-usage-num">$<%= mrrEstimate %></div>
+        </div>
+        <div class="billing-usage-item boards">
+          <div class="billing-usage-label">On a free trial</div>
+          <div class="billing-usage-num"><%= trialCount %></div>
+        </div>
+        <div class="billing-usage-item storage">
+          <div class="billing-usage-label">On Free plan</div>
+          <div class="billing-usage-num"><%= freeCount %></div>
+        </div>
+      </div>
+      <div class="billing-feature-list" style="border-top:1px solid var(--border); padding-top:14px; margin-top:16px;">
+        <% planBreakdown.forEach(function(row) { %>
+          <span class="<%= row.activeCount > 0 ? 'on' : 'off' %>"><%= row.plan.name %>: <%= row.activeCount %> active</span>
+        <% }); %>
+      </div>
+    </div>
+
+    <div class="card-panel" style="margin-top:20px;">
+      <h3>Organizations</h3>
+      <div class="table-scroll">
+      <table class="simple">
+        <thead><tr><th>Name</th><th>Plan</th><th>Status</th><th>Members</th><th>Boards</th><th>Created</th><th></th></tr></thead>
+        <tbody>
+          <% orgs.forEach(function(o) { %>
+            <tr>
+              <td><%= o.name %></td>
+              <td style="text-transform:capitalize;"><%= o.plan_key.replace(/_/g, ' ') %></td>
+              <td style="text-transform:capitalize;"><%= o.subscription_status %></td>
+              <td><%= o.member_count %></td>
+              <td><%= o.board_count %></td>
+              <td><%= new Date(o.created_at).toLocaleDateString() %></td>
+              <td><button type="button" class="btn ghost small" onclick="switchOrg(<%= o.id %>)">Enter as admin</button></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card-panel" style="margin-top:20px;">
+      <h3>Users</h3>
+      <div class="table-scroll">
+      <table class="simple">
+        <thead><tr><th>Name</th><th>Email</th><th>Organizations</th><th>Platform admin</th><th>Joined</th></tr></thead>
+        <tbody>
+          <% users.forEach(function(u) { %>
+            <tr>
+              <td><%= u.name %></td>
+              <td><%= u.email %></td>
+              <td style="font-size:12px;">
+                <% if (u.org_memberships.length === 0) { %>
+                  <span style="color:var(--text-muted);">none</span>
+                <% } else { %>
+                  <% u.org_memberships.forEach(function(m) { var parts = m.split(':'); %>
+                    <span class="tag-chip" style="background:var(--slate); margin:0 4px 4px 0; display:inline-block;"><%= parts[0] %> (<%= parts[1] %>)</span>
+                  <% }); %>
+                <% } %>
+              </td>
+              <td><%= u.is_platform_admin ? 'Yes' : '' %></td>
+              <td><%= new Date(u.created_at).toLocaleDateString() %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card-panel" style="margin-top:20px;">
+      <h3>Recent billing activity</h3>
+      <% if (recentTransactions.length === 0) { %>
+        <p style="font-size:13px; color:var(--text-muted);">No billing activity yet.</p>
+      <% } else { %>
+      <div class="table-scroll">
+      <table class="simple">
+        <thead><tr><th>Date</th><th>Org</th><th>Type</th><th>Plan</th><th>Amount</th><th>Status</th></tr></thead>
+        <tbody>
+          <% recentTransactions.forEach(function(t) { %>
+            <tr>
+              <td><%= new Date(t.created_at).toLocaleDateString() %></td>
+              <td><%= t.org_name %></td>
+              <td style="text-transform:capitalize;"><%= t.type.replace(/_/g, ' ') %></td>
+              <td><%= t.plan_key || '-' %></td>
+              <td><%= t.amount_usd ? '$' + t.amount_usd : '-' %></td>
+              <td style="text-transform:capitalize;"><%= t.status %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function switchOrg(id) {
+      fetch(`/orgs/switch/${id}`, { method: 'POST' })
+        .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
+        .then(({ ok, data }) => { if (!ok) throw new Error(data.error); window.location.href = '/'; })
+        .catch((err) => alert(err.message));
+    }
+  </script>
+</body>
+</html>
