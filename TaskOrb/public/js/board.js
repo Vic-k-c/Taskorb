@@ -46,7 +46,7 @@
 
   function updateCounts() {
     document.querySelectorAll('.board-list').forEach((list) => {
-      const count = list.querySelectorAll('.prospect-card').length;
+      const count = list.querySelectorAll('.prospect-card:not(.pending-delete)').length;
       list.querySelector('.count').textContent = count;
     });
   }
@@ -173,13 +173,41 @@
     })
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => { if (!ok) throw new Error(data.error); location.reload(); })
-      .catch((err) => alert(err.message));
+      .catch((err) => toast.error(err.message));
   };
+
+  // Hide the element now, send the real DELETE after a short window so the
+  // user can Undo. If they leave the page first, the delete is flushed.
+  const pendingDeletes = new Set();
+  function undoableDelete(el, message, url, afterCommit) {
+    el.style.display = 'none';
+    el.classList.add('pending-delete');
+    updateCounts();
+    let done = false;
+    const entry = { commit() {
+      if (done) return; done = true; pendingDeletes.delete(entry);
+      return fetch(url, { method: 'DELETE', keepalive: true }).then((r) => {
+        if (!r.ok) return r.json().catch(() => ({})).then((d) => { throw new Error(d.error || 'Delete failed.'); });
+        el.remove(); if (afterCommit) afterCommit(); updateCounts();
+      }).catch((err) => { el.style.display = ''; el.classList.remove('pending-delete'); updateCounts(); toast.error(err.message); });
+    } };
+    pendingDeletes.add(entry);
+    toast(message, {
+      actionLabel: 'Undo', ms: 6000,
+      onAction() { done = true; pendingDeletes.delete(entry); el.style.display = ''; el.classList.remove('pending-delete'); updateCounts(); },
+      onTimeout() { entry.commit(); }
+    });
+  }
+  window.addEventListener('pagehide', () => { pendingDeletes.forEach((e) => e.commit()); });
 
   window.deleteCard = function () {
     const id = document.getElementById('cardId').value;
-    if (!confirm('Delete this card? This cannot be undone.')) return;
-    fetch(`/api/cards/${id}`, { method: 'DELETE' }).then(() => location.reload());
+    const el = document.querySelector(`.prospect-card[data-card-id="${id}"]`);
+    if (!el) return;
+    closeModal();
+    undoableDelete(el, 'Card deleted', `/api/cards/${id}`, () => {
+      window.BOARD_DATA.forEach((l) => { l.cards = l.cards.filter((c) => String(c.id) !== String(id)); });
+    });
   };
 
   // --- Attachments + card cover selection ---
@@ -245,7 +273,7 @@
           attachInput.value = '';
           loadAttachments(cardId);
         })
-        .catch((err) => alert(err.message));
+        .catch((err) => toast.error(err.message));
     });
   }
 
@@ -253,13 +281,19 @@
   window.showQuickAdd = function (listId) {
     const container = document.getElementById(`qa-${listId}`);
     container.innerHTML = `
-      <input type="text" placeholder="Card name" id="qaName-${listId}" autofocus>
+      <input type="text" placeholder="Card name" id="qaName-${listId}" autocomplete="off" enterkeyhint="done">
       <div class="qa-actions">
         <button type="button" class="btn small" onclick="submitQuickAdd(${listId})">Add</button>
-        <button type="button" class="btn ghost small" onclick="cancelQuickAdd(${listId})">Cancel</button>
+        <button type="button" class="btn ghost small" onclick="cancelQuickAdd(${listId})">Done</button>
       </div>
     `;
-    document.getElementById(`qaName-${listId}`).focus();
+    const qaInput = document.getElementById(`qaName-${listId}`);
+    qaInput.addEventListener('keydown', function (e) {
+      if (e.isComposing) return; // don't fire mid-IME composition
+      if (e.key === 'Enter') { e.preventDefault(); submitQuickAdd(listId, { open: e.shiftKey }); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancelQuickAdd(listId); }
+    });
+    qaInput.focus();
   };
 
   window.cancelQuickAdd = function (listId) {
@@ -267,26 +301,96 @@
       `<button type="button" class="btn ghost small" style="width:100%;" onclick="showQuickAdd(${listId})">+ Add card</button>`;
   };
 
-  window.submitQuickAdd = function (listId) {
+  function buildCardTile(card) {
+    const tile = document.createElement('div');
+    tile.className = 'prospect-card';
+    tile.style.borderLeftColor = 'var(--border)';
+    tile.setAttribute('draggable', 'true');
+    tile.setAttribute('data-card-id', card.id);
+    tile.setAttribute('data-card-name', String(card.name || '').toLowerCase());
+    tile.addEventListener('click', () => openCard(card.id));
+    const name = document.createElement('div');
+    name.className = 'pname';
+    name.textContent = card.name;
+    const tags = document.createElement('div');
+    tags.className = 'ptags';
+    tile.appendChild(name);
+    tile.appendChild(tags);
+    return tile;
+  }
+
+  // Adds the card in place: no page reload, input stays open and focused so
+  // several cards can be typed in a row. Shift+Enter also opens the new card.
+  window.submitQuickAdd = function (listId, opts) {
     const input = document.getElementById(`qaName-${listId}`);
+    if (!input) return;
     const name = input.value.trim();
-    if (!name) return;
+    if (!name || input.dataset.busy) return; // ignore empty / double Enter
+    input.dataset.busy = '1';
     fetch(`/lists/${listId}/cards`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name })
-    }).then(() => location.reload());
+    }).then((res) => res.json().catch(() => ({})).then((d) => ({ ok: res.ok, d })))
+      .then(({ ok, d }) => {
+        if (!ok) throw new Error(d.error || 'Could not add the card.');
+        const card = Object.assign({ tags: [], attachment_count: 0 }, d);
+        const listData = window.BOARD_DATA.find((l) => String(l.id) === String(listId));
+        if (listData) listData.cards.push(card);
+        const container = document.querySelector(`.board-list-cards[data-list-id="${listId}"]`);
+        const qa = document.getElementById(`qa-${listId}`);
+        if (container && qa) container.insertBefore(buildCardTile(card), qa);
+        updateCounts();
+        input.value = '';
+        delete input.dataset.busy;
+        input.focus();
+        if (opts && opts.open) openCard(card.id);
+        else toast('Card added');
+      })
+      .catch((err) => { delete input.dataset.busy; toast.error(err.message || 'Network error. Try again.'); });
   };
 
   // --- Lists ---
   window.addList = function () {
-    const name = prompt('Name this list:');
-    if (!name || !name.trim()) return;
-    fetch(`/boards/${window.BOARD_ID}/lists`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim() })
-    }).then(() => location.reload());
+    const btn = document.querySelector('.add-list-btn');
+    if (!btn || document.getElementById('addListBox')) return;
+    const box = document.createElement('div');
+    box.className = 'add-list-box';
+    box.id = 'addListBox';
+    box.innerHTML = `
+      <input type="text" id="newListName" placeholder="List name" autocomplete="off" enterkeyhint="done">
+      <div class="qa-actions">
+        <button type="button" class="btn small" id="newListSave">Add list</button>
+        <button type="button" class="btn ghost small" id="newListCancel">Cancel</button>
+      </div>`;
+    btn.style.display = 'none';
+    btn.parentNode.insertBefore(box, btn);
+    const input = box.querySelector('#newListName');
+    const close = () => { box.remove(); btn.style.display = ''; };
+    const save = () => {
+      const name = input.value.trim();
+      if (!name || input.dataset.busy) return;
+      input.dataset.busy = '1';
+      fetch(`/boards/${window.BOARD_ID}/lists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      }).then((r) => r.json().catch(() => ({})).then((d) => ({ ok: r.ok, d })))
+        .then(({ ok, d }) => {
+          if (!ok) throw new Error(d.error || 'Could not add the list.');
+          toast.flash('List added');
+          location.reload();
+        })
+        .catch((err) => { delete input.dataset.busy; toast.error(err.message); });
+    };
+    box.querySelector('#newListSave').addEventListener('click', save);
+    box.querySelector('#newListCancel').addEventListener('click', close);
+    input.addEventListener('keydown', (e) => {
+      if (e.isComposing) return;
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(); }
+    });
+    input.focus();
   };
 
   window.renameList = function (input) {
@@ -299,8 +403,12 @@
   };
 
   window.deleteList = function (listId) {
-    if (!confirm('Delete this list and every card in it? This cannot be undone.')) return;
-    fetch(`/lists/${listId}`, { method: 'DELETE' }).then(() => location.reload());
+    const el = document.querySelector(`.board-list[data-list-id="${listId}"]`);
+    if (!el) return;
+    const n = el.querySelectorAll('.prospect-card').length;
+    undoableDelete(el, `List deleted${n ? ` (${n} card${n === 1 ? '' : 's'})` : ''}`, `/lists/${listId}`, () => {
+      window.BOARD_DATA = window.BOARD_DATA.filter((l) => String(l.id) !== String(listId));
+    });
   };
 
   // --- Sharing ---
@@ -318,7 +426,7 @@
     })
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => { if (!ok) throw new Error(data.error); location.reload(); })
-      .catch((err) => alert(err.message));
+      .catch((err) => toast.error(err.message));
   };
 
   window.changePermission = function (userId, permission) {
@@ -326,7 +434,7 @@
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ permission })
-    }).then((r) => r.json()).then((data) => { if (data.error) { alert(data.error); location.reload(); } });
+    }).then((r) => r.json()).then((data) => { if (data.error) { toast.error(data.error); setTimeout(() => location.reload(), 1200); } });
   };
 
   window.removeMember = function (userId) {
@@ -334,7 +442,7 @@
     fetch(`/boards/${window.BOARD_ID}/members/${userId}`, { method: 'DELETE' })
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => { if (!ok) throw new Error(data.error); location.reload(); })
-      .catch((err) => alert(err.message));
+      .catch((err) => toast.error(err.message));
   };
 
   // --- Board settings: cover photo, title/description, delete ---
@@ -350,7 +458,7 @@
       fetch(`/boards/${window.BOARD_ID}/cover`, { method: 'POST', body: fd })
         .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
         .then(({ ok, data }) => { if (!ok) throw new Error(data.error); location.reload(); })
-        .catch((err) => alert(err.message));
+        .catch((err) => toast.error(err.message));
     });
   }
 
@@ -372,12 +480,12 @@
   window.deleteBoard = function () {
     const confirmInput = document.getElementById('deleteConfirmInput');
     if (confirmInput.value.trim() !== 'DELETE') {
-      alert('Type DELETE (all caps) in the box to confirm.');
+      toast.error('Type DELETE (all caps) in the box to confirm.');
       return;
     }
     fetch(`/boards/${window.BOARD_ID}`, { method: 'DELETE' })
       .then((r) => r.json().then((data) => ({ ok: r.ok, data })))
       .then(({ ok, data }) => { if (!ok) throw new Error(data.error); window.location.href = '/boards'; })
-      .catch((err) => alert(err.message));
+      .catch((err) => toast.error(err.message));
   };
 })();

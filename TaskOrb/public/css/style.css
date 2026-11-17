@@ -774,3 +774,21 @@ table.simple th { color: var(--text-muted); text-transform: uppercase; font-size
    easy to spot once the modal is closed. */
 @keyframes deeplink-flash { 0%,100% { box-shadow: 0 0 0 0 rgba(123,79,224,0); } 30% { box-shadow: 0 0 0 5px rgba(123,79,224,0.45); } }
 .prospect-card.deeplink-flash { animation: deeplink-flash 1.6s ease-out 2; }
+
+/* Toasts */
+.toast-stack { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 76px); transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; width: calc(100% - 32px); max-width: 420px; pointer-events: none; }
+.toast { pointer-events: auto; display: flex; align-items: center; gap: 14px; justify-content: space-between; background: #26222E; color: #fff; padding: 10px 14px; border-radius: 10px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,0.25); animation: toast-in .18s ease-out; width: 100%; }
+.toast-error { background: var(--clay); }
+.toast-action { background: none; border: 0; color: #CDB8FF; font-weight: 700; font-size: 14px; cursor: pointer; padding: 4px 6px; }
+.toast-error .toast-action { color: #fff; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Due-date states on card chips */
+.followup-chip.is-overdue { background: rgba(181,83,60,0.16) !important; color: var(--clay) !important; font-weight: 700; }
+.followup-chip.is-today { background: rgba(214,150,30,0.20) !important; color: #8A5A00 !important; font-weight: 700; }
+.followup-chip.is-soon { background: rgba(123,79,224,0.20) !important; }
+
+/* Inline add-list box */
+.add-list-box { min-width: 260px; background: rgba(255,255,255,0.9); border-radius: 12px; padding: 10px; align-self: flex-start; }
+.add-list-box input { width: 100%; font-size: 16px; margin-bottom: 8px; }
+.add-list-box .qa-actions { display: flex; gap: 6px; }

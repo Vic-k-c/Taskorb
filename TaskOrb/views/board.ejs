@@ -320,6 +320,7 @@
     window.CAN_EDIT = <%= (myPermission === 'owner' || myPermission === 'editor') ? 'true' : 'false' %>;
     window.BOARD_TAGS = <%- JSON.stringify(boardTags).replace(/</g, '\\u003c') %>;
   </script>
+  <script src="/js/toast.js"></script>
   <script src="/js/board.js"></script>
   <script src="/js/followup-card.js"></script>
 </body>

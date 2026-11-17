@@ -19,6 +19,15 @@
     var d = new Date(iso);
     return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
+  // Overdue = red, today = amber, next 48h = stronger purple.
+  function applyChipState(chip, iso) {
+    chip.classList.remove('is-overdue', 'is-today', 'is-soon');
+    var d = new Date(iso), now = new Date();
+    var sameDay = d.toDateString() === now.toDateString();
+    if (d < now) chip.classList.add('is-overdue');
+    else if (sameDay) chip.classList.add('is-today');
+    else if (d - now < 48 * 3600 * 1000) chip.classList.add('is-soon');
+  }
   function currentCard() {
     var id = document.getElementById('cardId').value;
     return window.BOARD_DATA.flatMap(function (l) { return l.cards; }).find(function (c) { return String(c.id) === String(id); });
@@ -46,6 +55,7 @@
     if (!chip) { chip = document.createElement('span'); chip.className = 'tag followup-chip'; tags.appendChild(chip); }
     chip.textContent = '\uD83D\uDCC5 ' + formatChip(iso);
     chip.title = window.BOARD_DATE_LABEL || 'Due date';
+    applyChipState(chip, iso);
   }
 
   // The server renders each chip with a UTC timestamp; it can't know the
@@ -53,6 +63,7 @@
   document.querySelectorAll('.followup-chip[data-followup]').forEach(function (c) {
     c.textContent = '\uD83D\uDCC5 ' + formatChip(c.getAttribute('data-followup'));
     c.title = window.BOARD_DATE_LABEL || 'Due date';
+    applyChipState(c, c.getAttribute('data-followup'));
   });
 
   var originalOpenCard = window.openCard;
