@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#17233A">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TaskOrb">
+  <title>Reset link - Platform Admin - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/billing.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'platform', currentUser }) %>
+  <div class="page">
+    <h1>Password reset link</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;"><a href="/platform">&larr; Back to platform overview</a></p>
+    <div class="card-panel">
+      <p>One-time link for <strong><%= target.name %></strong> (<%= target.email %>). Valid for <%= ttl %> minutes; creating a new one cancels this one. Anyone with the link can set the password, so send it only to them.</p>
+      <input type="text" id="resetLink" value="<%= link %>" readonly onclick="this.select()" style="width:100%; font-size:14px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+        <button type="button" class="btn small" onclick="var i=document.getElementById('resetLink'); i.select(); navigator.clipboard ? navigator.clipboard.writeText(i.value) : document.execCommand('copy'); this.textContent='Copied';">Copy link</button>
+        <a class="btn ghost small" target="_blank" rel="noopener" href="https://wa.me/?text=<%= encodeURIComponent('Hi ' + target.name + ', use this link to set a new TaskOrb password (valid ' + ttl + ' min): ' + link) %>">Send via WhatsApp</a>
+        <a class="btn ghost small" href="mailto:<%= target.email %>?subject=<%= encodeURIComponent('Reset your TaskOrb password') %>&body=<%= encodeURIComponent('Hi ' + target.name + ',\n\nUse this link to set a new TaskOrb password (valid ' + ttl + ' minutes):\n' + link) %>">Send via email</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

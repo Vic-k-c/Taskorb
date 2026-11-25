@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#17233A">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TaskOrb">
+  <title>Import from Bubble - Platform Admin - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/billing.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'platform', currentUser }) %>
+  <div class="page">
+    <h1>Import finished</h1>
+    <div class="card-panel">
+      <ul style="font-size:14px;">
+        <li>Organisations created: <strong><%= result.orgsCreated %></strong> (already existed: <%= result.orgsReused %>)</li>
+        <li>Boards created: <strong><%= result.boardsCreated %></strong> (skipped, already imported: <%= result.boardsSkipped %>)</li>
+        <li>Lists created: <strong><%= result.listsCreated %></strong></li>
+        <li>Cards created: <strong><%= result.cardsCreated %></strong></li>
+        <li>New accounts created: <strong><%= result.usersCreated %></strong> (already had accounts: <%= result.usersExisting %>)</li>
+      </ul>
+      <p style="font-size:13px;">New accounts have no password. Open the platform page and press "Reset link" next to each person to send them one.</p>
+      <a class="btn" href="/platform">Go to platform overview</a>
+    </div>
+  </div>
+</body>
+</html>

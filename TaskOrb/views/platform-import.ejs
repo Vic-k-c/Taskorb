@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#17233A">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TaskOrb">
+  <title>Import from Bubble - Platform Admin - TaskOrb</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/billing.css">
+</head>
+<body class="has-bottom-nav">
+  <%- include('partials/nav', { active: 'platform', currentUser }) %>
+  <div class="page">
+    <h1>Import from Bubble.io</h1>
+    <p style="font-size:13px; color:var(--text-muted); margin-top:-8px;"><a href="/platform">&larr; Back to platform overview</a></p>
+    <div class="card-panel">
+      <h3>1. Upload your Bubble exports</h3>
+      <p style="font-size:13px;">In Bubble: App data &rarr; pick a type &rarr; Export. Choose every CSV you want to bring across (Teams, Users, Boards, Lists, Tasks, and optionally Locations, Meetings, Items, Comments). Nothing is created yet: you'll see a preview first.</p>
+      <input type="file" id="importFiles" accept=".csv,text/csv" multiple style="width:100%;">
+      <div style="margin-top:10px;"><button type="button" class="btn" id="importUpload">Upload and preview</button></div>
+      <div id="importStatus" style="font-size:13px; margin-top:8px;"></div>
+    </div>
+    <div class="card-panel" style="margin-top:16px;">
+      <h3>Previous uploads</h3>
+      <% if (!batches.length) { %><p style="font-size:13px; color:var(--text-muted);">None yet.</p><% } else { %>
+      <div class="table-scroll"><table class="simple">
+        <thead><tr><th>#</th><th>Uploaded</th><th>Files</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+        <% batches.forEach(function(b) { %>
+          <tr>
+            <td><%= b.id %></td>
+            <td><%= new Date(b.created_at).toLocaleString() %></td>
+            <td style="font-size:12px;"><% b.files.forEach(function(f) { %><div><%= f.type %>: <%= f.name %> (<%= f.rows %>)</div><% }); %></td>
+            <td style="text-transform:capitalize;"><%= b.status %></td>
+            <td><% if (b.status !== 'imported') { %><a class="btn ghost small" href="/platform/import/<%= b.id %>">Preview</a><% } %></td>
+          </tr>
+        <% }); %>
+        </tbody>
+      </table></div>
+      <% } %>
+    </div>
+  </div>
+  <script>
+    document.getElementById('importUpload').addEventListener('click', function () {
+      var input = document.getElementById('importFiles');
+      var status = document.getElementById('importStatus');
+      if (!input.files.length) { status.textContent = 'Choose at least one CSV file.'; return; }
+      var fd = new FormData();
+      Array.prototype.forEach.call(input.files, function (f) { fd.append('files', f); });
+      status.textContent = 'Uploading...';
+      fetch('/platform/import', { method: 'POST', body: fd })
+        .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) { if (!res.ok) throw new Error(res.d.error); window.location = '/platform/import/' + res.d.id; })
+        .catch(function (e) { status.textContent = e.message; });
+    });
+  </script>
+</body>
+</html>
