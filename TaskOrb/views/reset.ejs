@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#17233A">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TaskOrb">
+  <title>Reset password - TaskOrb</title>
+  <link rel="icon" href="/img/logo.png">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-box">
+      <img src="/img/logo.png" alt="TaskOrb" class="logo-img" style="height:36px; margin-bottom:8px;">
+      <h1 style="font-size:20px;">Choose a new password</h1>
+      <% if (!valid) { %>
+        <div class="error-box">This reset link is invalid, already used, or has expired.</div>
+        <div class="switch"><a href="/forgot">Request a new link</a></div>
+      <% } else { %>
+        <% if (error) { %><div class="error-box"><%= error %></div><% } %>
+        <form method="POST" action="/reset/<%= token %>">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label>New password</label>
+          <input type="password" name="password" minlength="6" required autofocus autocomplete="new-password">
+          <label>Confirm new password</label>
+          <input type="password" name="confirm" minlength="6" required autocomplete="new-password">
+          <button class="btn" type="submit">Save new password</button>
+        </form>
+      <% } %>
+    </div>
+  </div>
+</body>
+</html>
